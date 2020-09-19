@@ -1,129 +1,190 @@
-import random
-import sys
+from random import randrange, getrandbits
+from itertools import repeat
+from functools import reduce
 
-def keyGenaration(size=8):
-    #1) genarate 2 large prime p,q(same bit)
-    p*genaratePrime(size)
-    q*genaratePrime(size)
 
-    if not(isPrime(p) and isprime(q)):
-        raise ValueError('Both number must be prime')
-    elif p==q:
-        raise ValueError('p and q cannot be equal')
-    #2)compute n=pq and phi=(p-1)(q-1) phi=eular function
-    n=p*q
-    phi=(p-1)*(q-1)
 
-    #3) select random integer "e" (1<e<phi) such that gcd(e,phi)=1
-    e=random.randrange(1,phi)
-    g=gcd(e,phi)
-    while g!=1:
-        e=random.randrange(1,phi)
-        g=gcd(e,phi)
+def getPrime(n):
+    """Get a n-bit pseudo-random prime"""
 
-#4)Use extended eculid's algorithm to computer another unique integer "d" (1<d<phi) such that e.del(mod phi)
-    d=multiplicativeInverse(e,phi)
+    def isProbablePrime(n, t=7):
+        """Miller-Rabin primality test"""
 
-#5) return public and private keys
-#public key is (e,n) and private key is (d,n)
-    return ((n,e),(d,n))
-
-#Encryption
-
-def encrypt(pk,plaintext):
-    #1)obtain(n,e)
-    n,e=pk
-#2)message space[0,n-1]
-#3)compute c=m^e(mod n)
-    c=[(ord(char)**e)%n for char in plaintext]
-    print(c)
-#4) send "c" to other party
-    return c
-
-#decryption
-
-def decrypt(pk,ciphertext):
-    d,n=pk
-    #5)m=c^d(mod n)
-    m=[(chr(char**d )%n) for char in ciphertext]
-    return m
-
-def gcd(a,b):
-    #eculids algorithm
-    while b !=0:
-        temp=a%b
-        a=b
-        b=temp
-    return a
-
-def multiplicativeInverse(a,b):
-    #eculids extended algorithm
-    x=0
-    y=1
-    lx=1
-    ly=0
-    oa=a
-    ob=b
-
-    while b!=0:
-        q=a//b
-        (a,b)=(b,a%b)
-        (x,lx)=((lx-(q*x)),x)
-        (y,ly)=((ly-(q*y)),y)
-
-        if lx<0:
-            lx+=ob
-        if ly<0:
-            ly+=oa
-            return lx
-
-#genarate prime number
-
-def genaratePrime(keysize):
-    while True:
-        num=random.randrange(2**(keysize-1),2**(keysize))
-        if isPrime(num):
-            return num
-
-def isPrime(num):
-        if(num<2):
-            return false #0,1 and negative numbers are not prime
-        lowPrimes=[2,3,5,7,11,13,17,19,23,27,29,31,33,37,41,43,47,53,57,59,61,67,71,73,77,79,83,89,97,101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199,211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293,307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397,401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499,503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599,
-                    601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691,
-                    701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797,809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887,907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997
-                   ]
-        if num in lowPrimes:
-            return True
-        for prime in lowPrimes:
-            if(num%prime==0):
+        def isComposite(a):
+            """Check if n is composite"""
+            if pow(a, d, n) == 1:
                 return False
+            for i in range(s):
+                if pow(a, 2 ** i * d, n) == n - 1:
+                    return False
+            return True
 
-            return millerRabin(num)
+        assert n > 0
+        if n < 3:
+            return [False, False, True][n]
+        elif not n & 1:
+            return False
+        else:
+            s, d = 0, n - 1
+            while not d & 1:
+                s += 1
+                d >>= 1
+        for _ in repeat(None, t):
+            if isComposite(randrange(2, n)):
+                return False
+        return True
 
-def millerRabin(n,k=7):
-    if n<6:
-        return [False,False,True,True,False,True][n]
-    elif n & 1==0:
-        return False
+    p = getrandbits(n)
+    while not isProbablePrime(p):
+        p = getrandbits(n)
+    return p
+
+
+def inv(p, q):
+    """Multiplicative inverse"""
+
+    def xgcd(x, y):
+        """Extended Euclidean Algorithm"""
+        s1, s0 = 0, 1
+        t1, t0 = 1, 0
+        while y:
+            q = x // y
+            x, y = y, x % y
+            s1, s0 = s0 - q * s1, s1
+            t1, t0 = t0 - q * t1, t1
+        return x, s0, t0
+
+    s, t = xgcd(p, q)[0:2]
+    assert s == 1
+    if t < 0:
+        t += q
+    return t
+
+
+def genRSA(p, q):
+    """Generate public and private keys"""
+    phi, mod = (p - 1) * (q - 1), p * q
+    if mod < 65537:
+        return (3, inv(3, phi), mod)
     else:
-        s,d=0,n-1
-        while d & 1==0:
-            s,d=s+1,d>>1
-            for a in random.sample(range(2,min(n-2,sys.maximize)),min(n-1,k)):
-                x=pow(a,d,n)
-                if x!=1 and x+1!=n:
-                    for r in range(1,s):
-                        x=pow(x,2,n)
-                        if x==1:
-                            return False
-                        elif x==n-1:
-                            a=0
-                            break
-                            if a:
-                                return False
-                return True
+        return (65537, inv(65537, phi), mod)
 
 
+def text2Int(text):
+    """Convert a text string into an integer"""
+    return reduce(lambda x, y: (x << 8) + y, map(ord, text))
 
 
+def int2Text(number, size):
+    """Convert an integer into a text string"""
+    text = "".join([chr((number >> j) & 0xff)
+                    for j in reversed(range(0, size << 3, 8))])
+    return text.lstrip("\x00")
 
+
+def int2List(number, size):
+    """Convert an integer into a list of small integers"""
+    return [(number >> j) & 0xff
+            for j in reversed(range(0, size << 3, 8))]
+
+
+def list2Int(listInt):
+    """Convert a list of small integers into an integer"""
+    return reduce(lambda x, y: (x << 8) + y, listInt)
+
+
+def modSize(mod):
+    """Return length (in bytes) of modulus"""
+    modSize = len("{:02x}".format(mod)) // 2
+    return modSize
+
+
+def encrypt(ptext, pk, mod):
+    """Encrypt message with public key"""
+    size = modSize(mod)
+    output = []
+    while ptext:
+        nbytes = min(len(ptext), size - 1)
+        aux1 = text2Int(ptext[:nbytes])
+        assert aux1 < mod
+        aux2 = pow(aux1, pk, mod)
+        output += int2List(aux2, size + 2)
+        ptext = ptext[size:]
+    return output
+
+
+def decrypt(ctext, sk, p, q):
+    """Decrypt message with private key
+    using the Chinese Remainder Theorem"""
+    mod = p * q
+    size = modSize(mod)
+    output = ""
+    while ctext:
+        aux3 = list2Int(ctext[:size + 2])
+        assert aux3 < mod
+        m1 = pow(aux3, sk % (p - 1), p)
+        m2 = pow(aux3, sk % (q - 1), q)
+        h = (inv(q, p) * (m1 - m2)) % p
+        aux4 = m2 + h * q
+        output += int2Text(aux4, size)
+        ctext = ctext[size + 2:]
+    return output
+
+
+if __name__ == "__main__":
+
+    from math import log10
+    from time import time
+
+
+    def printHexList(intList):
+        """Print ciphertext in hex"""
+        for index, elem in enumerate(intList):
+            if index % 32 == 0:
+                print()
+            print("{:02x}".format(elem), end="")
+        print()
+
+
+    def printLargeInteger(number):
+        """Print long primes in a formatted way"""
+        string = "{:02x}".format(number)
+        for j in range(len(string)):
+            if j % 64 == 0:
+                print()
+            print(string[j], end="")
+        print()
+
+
+    def testCase(p, q, msg, nTimes=1):
+        """Execute test case: generate keys, encrypt message and
+           decrypt resulting ciphertext"""
+        print("Key size: {:0d} bits".format(round(log10(p * q) / log10(2))))
+        print("Prime #1:", end="")
+        printLargeInteger(p)
+        print("Prime #2:", end="")
+        printLargeInteger(q)
+        print("Plaintext:", msg)
+        pk, sk, mod = genRSA(p, q)
+        ctext = encrypt(msg, pk, mod)
+        print("Ciphertext:", end="")
+        printHexList(ctext)
+        ptext = decrypt(ctext, sk, p, q)
+        print("Recovered plaintext:", ptext, "\n")
+
+
+    # Second test: random primes (key size: 512 to 4096 bits)
+    key_size=[256, 512, 1024, 2048]
+    for n in key_size:
+        t1 = time()
+        p5 = getPrime(n)
+        t2 = time()
+        msg=input("message:")
+        print("Elapsed time for {:0d}-bit prime ".format(n), end="")
+        print("generation: {:0.3f} s".format(round(t2 - t1, 3)))
+        t3 = time()
+        p6 = getPrime(n)
+        t4 = time()
+        print("Elapsed time for {:0d}-bit prime ".format(n), end="")
+        print("generation: {:0.3f} s".format(round(t4 - t3, 3)))
+        testCase(p5, p6, msg)
