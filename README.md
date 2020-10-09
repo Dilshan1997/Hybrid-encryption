@@ -5,8 +5,9 @@
 2. RSA implementation 
 3. AES/DES implementation 
 4. Hybrid implementation 
-5. Demonstration
-6. Presantation
+5. GUI
+6. Demonstration
+7. Presantation
 
 ## Presentation
 1. Introduction

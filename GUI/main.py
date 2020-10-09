@@ -3,7 +3,7 @@ import tkinter
 def encrypt(message,shift_key):
 
     result='\n'
-    print('leangth :',len(message))
+    print('length :',len(message))
     for i in range(len(message)):
         letter=message[i]
         if letter.isupper():
@@ -18,7 +18,7 @@ def encrypt(message,shift_key):
 def decrypt(message,shift_key):
 
     result='\n'
-    print('leangth :',len(message))
+    print('length :',len(message))
     for i in range(len(message)):
         letter=message[i]
 

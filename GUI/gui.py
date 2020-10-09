@@ -21,9 +21,8 @@ def move_text_to_encrypt_box():
     moving_text = decryption_box.get("1.0", mn.tkinter.END)
     shifter_key_text = shifter_key_box.get('1.0', mn.tkinter.END)
     #checking if the decryption box has an error message
-    if empty_message in moving_text:
-        decryption_box.delete("1.0",mn.tkinter.END)
-    elif len(moving_text)>2:
+
+    if len(moving_text)>2 and len(shifter_key_text)>0:
 
         encryption_box.insert("1.0", mn.decrypt(moving_text, int(shifter_key_text)))
         decryption_box.delete("1.0", mn.tkinter.END)
