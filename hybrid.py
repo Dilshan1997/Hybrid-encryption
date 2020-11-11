@@ -5,7 +5,7 @@ from Crypto.Cipher import AES
 from Crypto import Random
 
 
-def gcd(a, b):
+def gcd(a, b): #greatst comman  divisor
     '''Euclid's algorithm '''
     while b != 0:
         temp = a % b
@@ -104,7 +104,7 @@ def KeyGeneration(size=8):
     e = random.randrange(1, phi)
     g = gcd(e, phi)
     while g != 1:
-        e = random.randrange(1, phi)
+        e = random.randrange(1, phi)#e get randomly from range 1-phi
         g = gcd(e, phi)
 
     # 4)Use Extended Euclid's Algorithm to compute another unique integer "d" (1<d<phi) such that e.d≡1(mod phi)
@@ -128,6 +128,7 @@ def encrypt(pk, plaintext):
 
 def decrypt(pk, ciphertext):
     d, n = pk
+    print("pk=",pk)
     # 5)m=c^d (mod n)
     m = [chr((char ** d) % n) for char in ciphertext]
     return m
@@ -140,3 +141,65 @@ def encryptAES(cipherAESe, plainText):
 def decryptAES(cipherAESd, cipherText):
     dec = cipherAESd.decrypt(cipherText).decode('utf-8')
     return dec
+
+
+def main():
+    # To encrypt a message addressed to Alice in a hybrid crypto-system, Bob does the following:
+    print("******************************************************************")
+    print("******************************************************************")
+    print("Welcome to the hybrid cryptographic scheme demostration...")
+    print("We're going to encrypt and decrypt a message using AES and RSA")
+    print("******************************************************************")
+    print("******************************************************************")
+    # To encrypt a message addressed to Alice in a hybrid crypto-system, Bob does the following:
+    # 1.	Obtains Alice’s public key.
+    print("Generating RSA public and Private keys......")
+    pub, pri = KeyGeneration()
+
+    # 2.	Generates a fresh symmetric key for the data encapsulation scheme.
+    print("Generating AES symmetric key......")
+    key = secrets.token_hex(16) #The secrets module provides functions for generating secure tokens, suitable for applications such as password resets, hard-to-guess URLs, and similar.
+    print("AES Symmetric Key: ")
+    print(key)
+    KeyAES = key.encode('utf-8')
+
+    # 3.	Encrypts the message under the data encapsulation scheme, using the symmetric key just generated.
+    plainText = input("Enter the message: ")
+    cipherAESe = AES.new(KeyAES, AES.MODE_GCM)
+    nonce = cipherAESe.nonce #It use only one time
+    print("Encrypting the message with AES......")
+    cipherText = encryptAES(cipherAESe, plainText)
+    print("AES cypher text: ")
+    print(cipherText)
+
+    # 4.	Encrypt the symmetric key under the key encapsulation scheme, using Alice’s public key.
+    cipherKey = encrypt(pub, key)
+    print("Encrypting the AES symmetric key with RSA......")
+    print("Encryted AES symmetric key")
+    print("cipher text=",cipherKey)
+    # 5.	Send both of these encryptions to Alice.
+    # Sending.........
+
+    # To decrypt this hybrid cipher-text, Alice does the following:
+
+    # 1.	Uses her private key to decrypt the symmetric key contained in the key encapsulation segment.
+    decriptedKey = ''.join(decrypt(pri, cipherKey))
+    print("Decrypting the AES Symmetric Key...")
+    print("AES Symmetric Key:")
+    print(decriptedKey)
+
+    # 2.	Uses this symmetric key to decrypt the message contained in the data encapsulation segment.
+    decriptedKey = decriptedKey.encode('utf-8')
+    cipherAESd = AES.new(decriptedKey, AES.MODE_GCM, nonce=nonce)
+    decrypted = decryptAES(cipherAESd, cipherText)
+    print("Decrypting the message using the AES symmetric key.....")
+    print("decrypted message: ")
+    print(decrypted)
+
+    input('Press ENTER to exit')
+
+
+if __name__ == "__main__":
+    main()
+
+    #phi=(p-1)*(q-1)
